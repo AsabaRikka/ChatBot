@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import Toast from './components/Toast'
-import type { Conversation, Message } from './types'
+import type { Conversation, Message, ChatMode } from './types'
 
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -10,6 +10,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mode, setMode] = useState<ChatMode>('chat')
 
   const handleNew = useCallback(() => {
     const conv: Conversation = {
@@ -157,6 +158,8 @@ def hello():
           messages={messages}
           isStreaming={isStreaming}
           isEmpty={!currentId || messages.length === 0}
+          mode={mode}
+          onModeChange={setMode}
           onSend={handleSend}
         />
       </div>

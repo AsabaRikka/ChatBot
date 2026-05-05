@@ -1,16 +1,19 @@
 import { useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
-import type { Message } from '../types'
+import ModeSwitch from './ModeSwitch'
+import type { Message, ChatMode } from '../types'
 
 interface ChatWindowProps {
   messages: Message[]
   isStreaming: boolean
   isEmpty: boolean
+  mode: ChatMode
+  onModeChange: (mode: ChatMode) => void
   onSend: (content: string) => void
 }
 
-export default function ChatWindow({ messages, isStreaming, isEmpty, onSend }: ChatWindowProps) {
+export default function ChatWindow({ messages, isStreaming, isEmpty, mode, onModeChange, onSend }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -33,6 +36,9 @@ export default function ChatWindow({ messages, isStreaming, isEmpty, onSend }: C
           </p>
         </div>
         <div className="w-full max-w-2xl">
+          <div className="mb-3 flex justify-center">
+            <ModeSwitch mode={mode} onChange={onModeChange} disabled={isStreaming} />
+          </div>
           <MessageInput onSend={onSend} disabled={isStreaming} />
         </div>
       </div>
@@ -55,6 +61,9 @@ export default function ChatWindow({ messages, isStreaming, isEmpty, onSend }: C
       </div>
       <div className="flex-shrink-0">
         <div className="max-w-3xl mx-auto w-full">
+          <div className="mb-3 flex justify-center">
+            <ModeSwitch mode={mode} onChange={onModeChange} disabled={isStreaming} />
+          </div>
           <MessageInput onSend={onSend} disabled={isStreaming} />
         </div>
       </div>
