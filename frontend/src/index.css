@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg-primary: #1a1a2e;
+  --color-bg-sidebar: #16213e;
+  --color-bubble-user: #2563eb;
+  --color-bubble-assistant: #1e293b;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
