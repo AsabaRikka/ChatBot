@@ -9,6 +9,11 @@
 │  │ 对话列表  │ │ 聊天窗口  │ │ Markdown渲染 │ │ 思考过程面板    │ │
 │  │(Sidebar) │ │(ChatWin) │ │(代码高亮)    │ │(ThinkingPanel) │ │
 │  └──────────┘ └──────────┘ └──────────────┘ └─────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────┐│
+│  │ 模式切换 (ModeSwitch)                                       ││
+│  │ ┌─ DeepSeek快速对话 (deepseek-chat)                        ┐││
+│  │ └─ DeepSeek深度推理 (deepseek-reasoner)                    ┘││
+│  └──────────────────────────────────────────────────────────────┘│
 │         │              │              │               │           │
 │         └──────────────┼──────────────┼───────────────┘           │
 │                        │ SSE 流式消费                             │
@@ -129,7 +134,8 @@ frontend/
 │   │   ├── ThinkingPanel.tsx    # 推理过程可折叠面板
 │   │   ├── MessageInput.tsx     # 输入框组件
 │   │   ├── MarkdownRenderer.tsx # Markdown 渲染组件
-│   │   └── Toast.tsx            # 全局提示组件
+│   │   ├── Toast.tsx            # 全局提示组件
+│   │   └── ModeSwitch.tsx       # 快速对话/深度推理 模式切换按钮
 │   ├── types/
 │   │   └── index.ts             # TypeScript 类型定义
 │   └── index.css                # Tailwind 入口 + 全局主题
@@ -179,6 +185,15 @@ frontend/
 **Toast：**
 - 全局弹窗：成功/错误/警告三种类型
 - 3 秒自动消失
+
+**ModeSwitch（模式切换按钮）：**
+- 两组标签式切换按钮，位于输入框上方或 ChatWindow 顶部工具栏
+- 「DeepSeek快速对话」标签：调用 `/api/chat/stream`，使用 `deepseek-chat` 模型，适合日常问答
+- 「DeepSeek深度推理」标签：调用 `/api/chat/reasoning`，使用 `deepseek-reasoner` 模型，适合复杂推理、数学、编程
+- 当前选中模式高亮（蓝色边框/背景），未选中模式灰色半透明
+- 切换模式时不清空当前对话上下文，仅改变后续请求的 API 端点
+- 流式输出中禁用切换（防止中途改模式导致数据错乱）
+- 移动端自适应：按钮缩小、文字精简为「快速」/「深度」
 
 ### 4.3 流式输出实现
 1. 用户发送消息后，立即在消息列表追加一条空的 AI 消息
@@ -298,6 +313,7 @@ ChatBot/
 | **ChatWindow** | 消息列表区域（overflow-y-auto），新消息自动 scrollIntoView；空状态引导页面（Logo + 输入提示）；底部固定 MessageInput | `frontend/src/components/ChatWindow.tsx` |
 | **Sidebar** | 顶部「+ 新对话」按钮；对话列表（按 updatedAt 倒序）；每项显示标题 + hover 删除按钮；当前对话高亮；移动端汉堡菜单呼出 | `frontend/src/components/Sidebar.tsx` |
 | **Toast** | 全局弹窗提示组件：成功/错误/警告三种类型，3 秒自动消失 | `frontend/src/components/Toast.tsx` |
+| **ModeSwitch** | 模式切换按钮组：「DeepSeek快速对话」与「DeepSeek深度推理」两个标签，位于输入框上方；选中高亮、流式中禁用切换 | `frontend/src/components/ModeSwitch.tsx` |
 
 #### 三. 布局设计
 
@@ -305,6 +321,7 @@ ChatBot/
 |------|------|------|
 | App 主布局 | Flex 水平布局，左侧 Sidebar（w-64, flex-shrink-0），右侧 ChatWindow（flex-1）；全屏高度 `h-screen` | `frontend/src/App.tsx` |
 | 移动端适配 | `md:` 断点：Sidebar 默认隐藏（absolute 浮层），点击汉堡图标显示；ChatWindow 占满全宽 | `frontend/src/App.tsx` |
+| 模式切换位置 | ModeSwitch 置于 MessageInput 上方、消息列表下方，作为 ChatWindow 底部固定区域的一部分；空状态页也显示，让用户在发送第一条消息前即可选择模式 | `frontend/src/components/ChatWindow.tsx` |
 
 #### 四. 样式主题
 
@@ -325,6 +342,7 @@ ChatBot/
 | `frontend/src/components/ChatWindow.tsx` | 聊天主窗口 |
 | `frontend/src/components/Sidebar.tsx` | 对话列表侧边栏 |
 | `frontend/src/components/Toast.tsx` | 全局提示组件 |
+| `frontend/src/components/ModeSwitch.tsx` | 快速对话/深度推理 模式切换按钮 |
 | `frontend/src/App.tsx` | 应用主布局 |
 | `frontend/src/index.css` | 全局样式 + Tailwind + 主题变量 |
 
@@ -490,7 +508,7 @@ chatStore.finishStreaming()
 |------|------|------|
 | 封装 `streamChat()` | Fetch API 读取 ReadableStream，逐行解析 `data: {...}`；按 type 回调 `onContent` / `onReasoning` / `onDone` / `onError` | `frontend/src/api/chat.ts` |
 | 实现 `chatStore.sendMessage()` | 编排完整发送流程：创建对话（如需） → 追加用户消息 → 调用 streamChat → 实时更新 assistant 消息 | `frontend/src/stores/chatStore.ts` |
-| 实现模式切换 | Store 中维护 `mode: 'chat' | 'reasoning'` 状态，UI 中提供切换开关，分别调用 `/api/chat/stream` 或 `/api/chat/reasoning` | `frontend/src/stores/chatStore.ts` |
+| 实现模式切换 | Store 中维护 `mode: 'chat' | 'reasoning'` 状态，通过 ModeSwitch 组件切换；`sendMessage()` 根据 `mode` 自动选择调用 `/api/chat/stream` 或 `/api/chat/reasoning` | `frontend/src/stores/chatStore.ts`, `frontend/src/components/ModeSwitch.tsx` |
 
 #### 三. 交付物
 
